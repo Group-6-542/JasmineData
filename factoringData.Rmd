@@ -1,0 +1,135 @@
+---
+title: "Final Project - Factoring"
+output: Group 6 - Jasmine Duong
+---
+
+#reading in the aggregated data from Emily
+```{r collecting, eval=TRUE}
+link='https://github.com/Group-6-542/EmilyRepository/raw/main/mergedGroupDataFinal.csv'
+
+finalData=read.csv(link)
+```
+
+#taking out a smaller part of the data
+```{r}
+subSet = finalData [,c(3:6)]
+```
+
+#returns names of columns in this subset
+```{r}
+names(subSet)
+```
+
+```{r}
+#install.packages("lavaan", dependencies = TRUE)
+```
+
+```{r}
+library(lavaan)
+```
+
+#conducting a fit CFA factoring analysis
+```{r}
+model='dem=~ numberOfReturns + avgAGI + casesReported + numberOfPets'
+
+fit<-cfa(model, data = subSet,std.lv=TRUE)
+indexCFA=lavPredict(fit)
+```
+
+```{r}
+library(magrittr)
+```
+
+#checking to see the range of the CFA index (not between 0 and 10)
+```{r}
+indexCFA%>%head(10)
+```
+
+#adjusting the CFA index range to be between 0 and 10
+```{r}
+library(scales)
+indexCFANorm=rescale(as.vector(indexCFA), to = c(0, 10))
+```
+
+#this is our final index variable
+```{r}
+finalData$Factoring=indexCFANorm
+```
+
+```{r}
+library(ggplot2)
+```
+
+#plotting this index
+```{r}
+base=ggplot(data= finalData, aes(x=Factoring))
+base+geom_histogram()
+```
+
+#plotting against other variables, Number of Returns
+```{r}
+base=ggplot(data= finalData, aes(x=Factoring, y=numberOfReturns))
+base+geom_point()
+```
+
+#plotting against other variables, avg AGI
+```{r}
+base=ggplot(data= finalData, aes(x=Factoring, y=avgAGI))
+base+geom_point()
+```
+
+#plotting against other variables, Cases Reported
+```{r}
+base=ggplot(data= finalData, aes(x=Factoring, y=casesReported))
+base+geom_point()
+```
+
+#plotting against other variables, Number of Pets
+```{r}
+base=ggplot(data= finalData, aes(x=Factoring, y=numberOfPets))
+base+geom_point()
+```
+
+#Gives an estimate of the dataframe of this latent variable model
+```{r}
+evalCFA1=parameterEstimates(fit, standardized =TRUE)
+```
+
+#returns the standard deviation and p-value for each column in subset
+```{r}
+evalCFA1[evalCFA1$op=="=~",c('rhs','std.all','pvalue')]
+```
+
+```{r}
+evalCFA2=as.list(fitMeasures(fit))
+```
+
+#returns the chi-square, degrees of freedom, and p-value for the model (p-value of chi-square greater than 0.05)
+```{r}
+evalCFA2[c("chisq", "df", "pvalue")] 
+```
+
+#caluculates the Tucker-Lewis, incremential fit index (greater than 0.9)
+```{r}
+evalCFA2$tli
+```
+
+#calculates the RMSEA (less than 0.05)
+```{r}
+evalCFA2[c( 'rmsea.ci.lower','rmsea','rmsea.ci.upper')] 
+```
+
+```{r}
+#install.packages("semPlot5", dependencies = TRUE)
+```
+
+```{r}
+library(semPlot)
+```
+
+#plots out the diagram of the SEM model, general lineal model
+```{r}
+semPaths(fit, what='std', nCharNodes=10, sizeMan=8,
+         edge.label.cex=1.5, fade=T,residuals = F)
+```
+
